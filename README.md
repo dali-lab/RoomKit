@@ -1,4 +1,4 @@
 
-![](./iconWithNameSmall.png)
+![](./icon/iconWithNameSmall.png)
 
 # RoomKit
