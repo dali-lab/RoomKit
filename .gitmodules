@@ -1,0 +1,4 @@
+[submodule "server"]
+	path = server
+	url = git@github.com:dali-lab/RoomKitServer.git
+	branch = master
