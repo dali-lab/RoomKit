@@ -18,14 +18,13 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-TODO: Add long description of the pod here.
+RoomKit is a framework that allows for you to train and then use a model of bluetooth signals in the rooms of a space. The framework will comunicate with the a server than handles all the machine learning and will use a bluetooth beacon library to get signal strengths.
                        DESC
 
   s.homepage         = 'https://github.com/dali-lab/RoomKit'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'johnlev' => 'john.lyme@mac.com' }
   s.source           = { :git => 'https://github.com/johnlev/RoomKit.git', :tag => s.version.to_s }
-  s.pod_target_xcconfig = { 'SWIFT_VERSION' => '4.0' }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '8.0'
