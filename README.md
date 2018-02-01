@@ -2,7 +2,7 @@
 
 # RoomKit
 
-[![CI Status](http://img.shields.io/travis/johnlev/RoomKit.svg?style=flat)](https://travis-ci.org/johnlev/RoomKit)
+[![Build Status](https://travis-ci.org/dali-lab/RoomKit.svg?branch=master)](https://travis-ci.org/dali-lab/RoomKit)
 [![Version](https://img.shields.io/cocoapods/v/RoomKit.svg?style=flat)](http://cocoapods.org/pods/RoomKit)
 [![License](https://img.shields.io/cocoapods/l/RoomKit.svg?style=flat)](http://cocoapods.org/pods/RoomKit)
 [![Platform](https://img.shields.io/cocoapods/p/RoomKit.svg?style=flat)](http://cocoapods.org/pods/RoomKit)
