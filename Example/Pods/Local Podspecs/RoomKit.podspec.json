@@ -1,0 +1,22 @@
+{
+  "name": "RoomKit",
+  "version": "0.1.0",
+  "summary": "A short description of RoomKit.",
+  "description": "TODO: Add long description of the pod here.",
+  "homepage": "https://github.com/johnlev/RoomKit",
+  "license": {
+    "type": "MIT",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "johnlev": "john.lyme@mac.com"
+  },
+  "source": {
+    "git": "https://github.com/johnlev/RoomKit.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "8.0"
+  },
+  "source_files": "RoomKit/Classes/**/*"
+}
