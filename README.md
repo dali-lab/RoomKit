@@ -1,3 +1,5 @@
+![](./icon/iconWithNameSmall.png)
+
 # RoomKit
 
 [![CI Status](http://img.shields.io/travis/johnlev/RoomKit.svg?style=flat)](https://travis-ci.org/johnlev/RoomKit)
