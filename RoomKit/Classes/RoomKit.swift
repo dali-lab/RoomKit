@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import CoreLocation
 
-class RoomKit {
+public class RoomKit {
 	private static var unProtConfig: RoomKit.Config!
 	public static var config: RoomKit.Config {
 		if self.unProtConfig == nil {
@@ -19,7 +20,31 @@ class RoomKit {
 		return unProtConfig!
 	}
 	
-	static func configure(config: RoomKit.Config) {
-		
+	public static func configure(config: RoomKit.Config, callback: ((RoomKit.error?) -> Void)?) {
+		RoomKit.unProtConfig = config
+		config.validate { (success, reason) in
+			if !success {
+				if let callback = callback {
+					callback(RoomKit.error.ConfigValidationFailed(reason: reason ?? "unknown"))
+				}else{
+					fatalError("Config validation failed! Reason: \(reason ?? "unknown")")
+				}
+			}else{
+				callback?(nil)
+				startMonitoring()
+			}
+		}
+	}
+	
+	private static func startMonitoring() {
+		Map.getAll { (maps, error) in
+			guard error != nil else {
+				return
+			}
+			
+			for map in maps {
+				BeaconManager.getInstance().monitorMap(map: map)
+			}
+		}
 	}
 }

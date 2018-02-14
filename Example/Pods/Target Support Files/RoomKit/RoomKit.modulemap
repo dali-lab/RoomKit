@@ -1,6 +1,0 @@
-framework module RoomKit {
-  umbrella header "RoomKit-umbrella.h"
-
-  export *
-  module * { export * }
-}

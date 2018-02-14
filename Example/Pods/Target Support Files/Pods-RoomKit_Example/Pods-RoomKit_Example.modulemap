@@ -1,6 +1,0 @@
-framework module Pods_RoomKit_Example {
-  umbrella header "Pods-RoomKit_Example-umbrella.h"
-
-  export *
-  module * { export * }
-}
