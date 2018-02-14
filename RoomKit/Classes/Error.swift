@@ -13,5 +13,6 @@ extension RoomKit {
 		case FailedToSerializeData
 		case ActionFailed
 		case AlreadyTrainingMap
+		case UnknownError
 	}
 }

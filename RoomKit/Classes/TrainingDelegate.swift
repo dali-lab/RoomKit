@@ -7,6 +7,6 @@
 
 import Foundation
 
-protocol TrainingDelegate {
-	func trainingUpdate()
+public protocol TrainingDelegate {
+	func trainingUpdate(progress: [String:Float])
 }

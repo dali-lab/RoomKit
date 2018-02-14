@@ -10,7 +10,7 @@ import SwiftyJSON
 import CoreLocation
 
 extension RoomKit {
-	public struct Map {
+	public class Map: Hashable {
 		public let id: String!
 		public let name: String
 		public let rooms: [String]
@@ -23,7 +23,7 @@ extension RoomKit {
 			self.uuid = uuid
 		}
 		
-		public static func createNew(name: String, rooms: [String], uuid: String, callback: @escaping (Error?) -> Void) throws {
+		public static func createNew(name: String, rooms: [String], uuid: String, callback: @escaping (Map?, Error?) -> Void) throws {
 			guard let adminKey = RoomKit.config.adminKey else {
 				fatalError("RoomKit: Admin Key missing! You can't use 'createNew' function if you don't have an admin key")
 			}
@@ -41,20 +41,24 @@ extension RoomKit {
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
 				guard let response = response as? HTTPURLResponse else {
 					DispatchQueue.main.async {
-						callback(nil)
+						callback(nil, RoomKit.error.UnknownError)
 					}
 					return
 				}
 				
+				if let data = data {
+					if let map = Map.parse(json: JSON(data)) {
+						DispatchQueue.main.async {
+							callback(map, nil)
+						}
+						return
+					}
+				}
+				
 				DispatchQueue.main.async {
-					callback(response.statusCode == 200 ? nil : RoomKit.error.ActionFailed)
+					callback(nil, response.statusCode == 200 ? nil : RoomKit.error.ActionFailed)
 				}
 			}.resume()
-		}
-		
-		public func startTraining(startingRoom room: String) {
-			assert(rooms.contains(room))
-			
 		}
 
 		private init(name: String, id: String, uuid: String, rooms: [String]) {
@@ -79,8 +83,50 @@ extension RoomKit {
 			return Map(name: name, id: id, uuid: uuid, rooms: rooms)
 		}
 		
-		public func predict(beacons: [CLBeacon]) {
+		public func startPredictingRooms() {
+			BeaconManager.getInstance().startingRangingMap(map: self)
+			NotificationCenter.default.addObserver(self, selector: #selector(beaconsDidRange(notification:)), name: Notification.Name.RoomKit.BeaconsDidRange, object: self)
+		}
+		
+		public func stopPredictingRooms() {
+			BeaconManager.getInstance().stopMonitoring(map: self)
+			NotificationCenter.default.removeObserver(self)
+		}
+		
+		@objc private func beaconsDidRange(notification: Notification) {
+			guard let beacons = notification.userInfo?["beacons"] as? [CLBeacon] else {
+				return
+			}
 			
+			var dict = [[String: Any]]()
+			for beacon in beacons {
+				dict.append(["major": beacon.major, "minor": beacon.minor, "strength": beacon.accuracy])
+			}
+			
+			let url = URL(string: "\(RoomKit.config.server)/maps/\(id)")!
+			var request = URLRequest(url: url)
+			request.addValue(RoomKit.config.userKey, forHTTPHeaderField: "authorization")
+			request.httpMethod = "POST"
+			guard let data = try? JSON(dict).rawData() else {
+				return
+			}
+			request.httpBody = data
+			
+			URLSession.shared.dataTask(with: request) { (data, response, error) in
+				guard let data = data else {
+					return
+				}
+				let json = JSON(data)
+				guard let roomIndex = json["roomIndex"].int, let room = json["room"].string else {
+					return
+				}
+				
+				for delegate in RoomKit.delegates {
+					if let delegate = delegate {
+						delegate.determined(room: roomIndex, with: room, on: self)
+					}
+				}
+			}
 		}
 		
 		public static func getAll(callback: @escaping ([Map], error?) -> Void) {
@@ -104,6 +150,14 @@ extension RoomKit {
 				
 				callback(maps, nil)
 			}.resume()
+		}
+		
+		public var hashValue: Int {
+			return id.hashValue
+		}
+		
+		public static func ==(lhs: RoomKit.Map, rhs: RoomKit.Map) -> Bool {
+			return lhs.id == rhs.id
 		}
 	}
 }
