@@ -22,17 +22,19 @@ public class RoomKit {
 	internal static var delegates: [RoomKitDelegate?] = []
 	
 	public static func configure(config: RoomKit.Config, callback: ((RoomKit.error?) -> Void)?) {
-		RoomKit.unProtConfig = config
 		config.validate { (success, reason) in
-			if !success {
-				if let callback = callback {
-					callback(RoomKit.error.ConfigValidationFailed(reason: reason ?? "unknown"))
+			DispatchQueue.main.async {
+				if !success {
+					if let callback = callback {
+						callback(RoomKit.error.ConfigValidationFailed(reason: reason ?? "unknown"))
+					}else{
+						fatalError("Config validation failed! Reason: \(reason ?? "unknown")")
+					}
 				}else{
-					fatalError("Config validation failed! Reason: \(reason ?? "unknown")")
+					RoomKit.unProtConfig = config
+					callback?(nil)
+					startMonitoring()
 				}
-			}else{
-				callback?(nil)
-				startMonitoring()
 			}
 		}
 	}

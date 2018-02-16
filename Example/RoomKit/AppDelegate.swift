@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import RoomKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {

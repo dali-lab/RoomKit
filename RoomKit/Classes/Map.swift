@@ -11,10 +11,15 @@ import CoreLocation
 
 extension RoomKit {
 	public class Map: Hashable {
+		private static let DATA_BUFFER_SIZE = 5
+		private static let CLASSIFICATION_BUFFER_SIZE = 1
 		public let id: String!
 		public let name: String
 		public let rooms: [String]
 		internal let uuid: String
+		private var dataBuffer: [String:(major: NSNumber, minor: NSNumber, accuracy: Double, num: Int)] = [:]
+		private var dataBufferCount = 0
+		private var classificationBuffer: [(index: Int, name: String)] = []
 
 		private init(name: String, rooms: [String], uuid: String) {
 			id = nil
@@ -28,12 +33,15 @@ extension RoomKit {
 				fatalError("RoomKit: Admin Key missing! You can't use 'createNew' function if you don't have an admin key")
 			}
 			
-			guard let data = try? JSON(["name": name, "rooms": rooms, "uuid": uuid]).rawData() else {
+			let dict: [String : Any] = ["name": name, "rooms": rooms, "uuid": uuid]
+			
+			guard let data = try? JSON(dict).rawData() else {
 				throw(RoomKit.error.FailedToSerializeData)
 			}
 			
 			let url = URL(string: "\(RoomKit.config.server)/maps")!
 			var request = URLRequest(url: url)
+			request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 			request.addValue(adminKey, forHTTPHeaderField: "authorization")
 			request.httpMethod = "POST"
 			request.httpBody = data
@@ -84,11 +92,13 @@ extension RoomKit {
 		}
 		
 		public func startPredictingRooms() {
+			BeaconManager.getInstance().stopMonitoring(map: self)
 			BeaconManager.getInstance().startingRangingMap(map: self)
 			NotificationCenter.default.addObserver(self, selector: #selector(beaconsDidRange(notification:)), name: Notification.Name.RoomKit.BeaconsDidRange, object: self)
 		}
 		
 		public func stopPredictingRooms() {
+			BeaconManager.getInstance().stopRangingMap(map: self)
 			BeaconManager.getInstance().stopMonitoring(map: self)
 			NotificationCenter.default.removeObserver(self)
 		}
@@ -98,13 +108,32 @@ extension RoomKit {
 				return
 			}
 			
-			var dict = [[String: Any]]()
 			for beacon in beacons {
+				if let thing = dataBuffer["\(beacon.major):\(beacon.minor)"] {
+					let accuracy = beacon.accuracy * 1/Double(thing.num) + thing.accuracy * Double((thing.num - 1))/Double(thing.num)
+					dataBuffer["\(beacon.major):\(beacon.minor)"] = (major: beacon.major, minor: beacon.minor, accuracy: accuracy, num: thing.num + 1)
+				}else {
+					dataBuffer["\(beacon.major):\(beacon.minor)"] = (major: beacon.major, minor: beacon.minor, accuracy: beacon.accuracy, num: 1)
+				}
+			}
+			dataBufferCount += 1
+			if dataBufferCount > Map.DATA_BUFFER_SIZE {
+				self.classify()
+				self.dataBuffer.removeAll()
+				dataBufferCount = 0
+			}
+		}
+		
+		private func classify() {
+			
+			var dict = [[String: Any]]()
+			for (_, beacon) in dataBuffer {
 				dict.append(["major": beacon.major, "minor": beacon.minor, "strength": beacon.accuracy])
 			}
 			
-			let url = URL(string: "\(RoomKit.config.server)/maps/\(id)")!
+			let url = URL(string: "\(RoomKit.config.server)/maps/\(id!)")!
 			var request = URLRequest(url: url)
+			request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 			request.addValue(RoomKit.config.userKey, forHTTPHeaderField: "authorization")
 			request.httpMethod = "POST"
 			guard let data = try? JSON(dict).rawData() else {
@@ -117,16 +146,42 @@ extension RoomKit {
 					return
 				}
 				let json = JSON(data)
-				guard let roomIndex = json["roomIndex"].int, let room = json["room"].string else {
+				guard let dict = json.dictionary, let roomIndex = dict["roomIndex"]?.int, let room = dict["room"]?.string else {
 					return
+				}
+				
+				var maxClass = 0
+				if Map.CLASSIFICATION_BUFFER_SIZE > 1 {
+				
+					self.classificationBuffer.append((index: roomIndex, name: room))
+					
+					var countDict = [Int](repeating: 0, count: self.classificationBuffer.count)
+					for item in self.classificationBuffer {
+						countDict[item.index] = countDict[item.index] + 1
+					}
+					if self.classificationBuffer.count > Map.CLASSIFICATION_BUFFER_SIZE {
+						self.classificationBuffer.removeFirst()
+					}
+					
+					var max = 0
+					for i in 0..<countDict.count {
+						if max < countDict[i] {
+							max = countDict[i]
+							maxClass = i
+						}
+					}
+				}else{
+					maxClass = roomIndex
 				}
 				
 				for delegate in RoomKit.delegates {
 					if let delegate = delegate {
-						delegate.determined(room: roomIndex, with: room, on: self)
+						DispatchQueue.main.async {
+							delegate.determined(room: maxClass, with: self.rooms[maxClass], on: self)
+						}
 					}
 				}
-			}
+			}.resume()
 		}
 		
 		public static func getAll(callback: @escaping ([Map], error?) -> Void) {
@@ -137,7 +192,9 @@ extension RoomKit {
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
 				guard let data = data, let json = try? JSON(data: data), let array = json.array else {
-					callback([], RoomKit.error.ActionFailed)
+					DispatchQueue.main.async {
+						callback([], RoomKit.error.ActionFailed)
+					}
 					return
 				}
 				
@@ -148,7 +205,9 @@ extension RoomKit {
 					}
 				}
 				
-				callback(maps, nil)
+				DispatchQueue.main.async {
+					callback(maps, nil)
+				}
 			}.resume()
 		}
 		

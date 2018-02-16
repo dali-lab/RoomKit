@@ -10,16 +10,23 @@ import CoreLocation
 import SwiftyJSON
 
 extension RoomKit {
-	class Trainer {
-		private static let optimalNumEntries = 100
+	public class Trainer {
+		private static let optimalNumEntries = 500
 		static var instance: RoomKit.Trainer!
-		var delegate: TrainingDelegate?
+		public var delegate: TrainingDelegate?
 		var trainingMap: Map?
 		var currentRoom: String?
 		var paused = false
 		var entriesSavedForRoom: [String: Int] = [:]
 		var locationManager = CLLocationManager()
 		var dataBackup: [(room: String, beacons: [CLBeacon])] = []
+		public var progress: [String: Float] {
+			var progress = [String:Float]()
+			for (room, numEntries) in self.entriesSavedForRoom {
+				progress[room] = Float(numEntries) / Float(Trainer.optimalNumEntries)
+			}
+			return progress
+		}
 		
 		private init?() {
 			if RoomKit.Trainer.instance != nil {
@@ -28,7 +35,7 @@ extension RoomKit {
 			RoomKit.Trainer.instance = self
 		}
 		
-		public func getInstance() -> Trainer {
+		public static func getInstance() -> Trainer {
 			return Trainer() ?? RoomKit.Trainer.instance
 		}
 		
@@ -53,10 +60,11 @@ extension RoomKit {
 			dataBackup.append((currentRoom!, beacons))
 			
 			var request = generateDataSaveRequest()
+			request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 			request.addValue(adminKey, forHTTPHeaderField: "authorization")
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
-				guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 else {
+				guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
 					// Failed, I think, so add to backlog
 					self.dataBackup.append((room: self.currentRoom!, beacons: beacons))
 					return
@@ -64,11 +72,9 @@ extension RoomKit {
 				
 				self.entriesSavedForRoom[self.currentRoom!] = (self.entriesSavedForRoom[self.currentRoom!] ?? 0) + self.dataBackup.count
 				if let delegate = self.delegate {
-					var progress = [String:Float]()
-					for (room, numEntries) in self.entriesSavedForRoom {
-						progress[room] = Float(numEntries) / Float(Trainer.optimalNumEntries)
+					DispatchQueue.main.async {
+						delegate.trainingUpdate(progress: self.progress)
 					}
-					delegate.trainingUpdate(progress: progress)
 				}
 				self.dataBackup.removeAll()
 			}.resume()
@@ -87,7 +93,7 @@ extension RoomKit {
 				data.append(entry)
 			}
 			
-			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id)")!)
+			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id!)")!)
 			request.httpMethod = "PUT"
 			if let data = try? JSON(data).rawData() {
 				request.httpBody = data
@@ -137,7 +143,7 @@ extension RoomKit {
 				return
 			}
 			
-			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id)/train")!)
+			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id!)/train")!)
 			request.httpMethod = "POST"
 			request.addValue(adminKey, forHTTPHeaderField: "authorization")
 			
