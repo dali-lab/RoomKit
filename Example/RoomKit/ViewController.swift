@@ -15,7 +15,7 @@ class ViewController: UIViewController {
 	@IBOutlet weak var userKeyTextField: UITextField!
 	@IBOutlet weak var loader: UIActivityIndicatorView!
 	
-	var dict = NSDictionary.init(contentsOfFile: Bundle.main.path(forResource: "environment", ofType: "plist")!) as! [String: Any]
+	var dict = ["serverURL": "https://roomkit.herokuapp.com"]
 	
     override func viewDidLoad() {
         super.viewDidLoad()

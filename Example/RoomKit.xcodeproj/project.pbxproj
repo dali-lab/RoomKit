@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		522AC0ED2034B22000730625 /* environment.plist in Resources */ = {isa = PBXBuildFile; fileRef = 522AC0EC2034B22000730625 /* environment.plist */; };
 		522AC0EF2034B96400730625 /* MapsTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522AC0EE2034B96400730625 /* MapsTableViewController.swift */; };
 		522AC0F12034BB3900730625 /* NewMapTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522AC0F02034BB3900730625 /* NewMapTableViewController.swift */; };
 		52C920D4203622AC0093162B /* RoomsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C920D3203622AC0093162B /* RoomsViewController.swift */; };
@@ -37,7 +36,6 @@
 		1D0E925EF2CB44BFB53E1F1B /* Pods-RoomKit_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RoomKit_Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-RoomKit_Example/Pods-RoomKit_Example.release.xcconfig"; sourceTree = "<group>"; };
 		3C0BA815D75F44951F9F71FB /* Pods-RoomKit_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RoomKit_Example.debug.xcconfig"; path = "Pods/Target Support Files/Pods-RoomKit_Example/Pods-RoomKit_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		3E1B38CC15081F1EE59F8579 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		522AC0EC2034B22000730625 /* environment.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = environment.plist; sourceTree = "<group>"; };
 		522AC0EE2034B96400730625 /* MapsTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapsTableViewController.swift; sourceTree = "<group>"; };
 		522AC0F02034BB3900730625 /* NewMapTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMapTableViewController.swift; sourceTree = "<group>"; };
 		52C920D3203622AC0093162B /* RoomsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomsViewController.swift; sourceTree = "<group>"; };
@@ -117,7 +115,6 @@
 			isa = PBXGroup;
 			children = (
 				607FACD51AFB9204008FA782 /* AppDelegate.swift */,
-				522AC0EC2034B22000730625 /* environment.plist */,
 				607FACD71AFB9204008FA782 /* ViewController.swift */,
 				522AC0EE2034B96400730625 /* MapsTableViewController.swift */,
 				522AC0F02034BB3900730625 /* NewMapTableViewController.swift */,
@@ -268,7 +265,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				522AC0ED2034B22000730625 /* environment.plist in Resources */,
 				607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */,
 				607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */,
 				607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */,
