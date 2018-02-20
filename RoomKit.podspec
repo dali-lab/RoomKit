@@ -9,6 +9,7 @@
 Pod::Spec.new do |s|
   s.name             = 'RoomKit'
   s.version          = '0.1.0'
+  s.swift_version    = '>= 4.0'
   s.summary          = 'RoomKit is a framework that allows for you to train and then use a model of bluetooth signals in the rooms of a space.'
 
 # This description is used to generate tags and improve search results.
