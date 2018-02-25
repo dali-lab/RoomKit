@@ -25,7 +25,7 @@ RoomKit is a framework that allows for you to train and then use a model of blue
   s.homepage         = 'https://github.com/dali-lab/RoomKit'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'johnlev' => 'john.lyme@mac.com' }
-  s.source           = { :git => 'https://github.com/johnlev/RoomKit.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/dali-lab/RoomKit.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '8.0'
