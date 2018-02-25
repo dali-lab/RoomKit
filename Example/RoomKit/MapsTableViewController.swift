@@ -24,6 +24,7 @@ class MapsTableViewController: UITableViewController {
 	override func viewWillAppear(_ animated: Bool) {
 		RoomKit.Map.getAll { (maps, error) in
 			self.maps = maps
+			print(maps.first?.id)
 			self.tableView.reloadData()
 		}
 	}

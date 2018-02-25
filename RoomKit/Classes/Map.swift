@@ -218,6 +218,17 @@ extension RoomKit {
 		public static func ==(lhs: RoomKit.Map, rhs: RoomKit.Map) -> Bool {
 			return lhs.id == rhs.id
 		}
+		
+		static public func getMap(for id: String, callback: ((Map?) -> Void)?) {
+			URLSession.shared.dataTask(with: URL(string: "\(config.server)/maps/\(id)")!) { (data, response, error) in
+				if let data = data {
+					let object = JSON(data)
+					if let callback = callback {callback(Map.parse(json: object))}
+				}else{
+					if let callback = callback {callback(nil)}
+				}
+			}
+		}
 	}
 }
 
