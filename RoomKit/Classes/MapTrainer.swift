@@ -59,7 +59,7 @@ extension RoomKit {
 			
 			dataBackup.append((currentRoom!, beacons))
 			
-			var request = generateDataSaveRequest(adminKey: adminKey)
+			let request = generateDataSaveRequest(adminKey: adminKey)
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
 				guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
