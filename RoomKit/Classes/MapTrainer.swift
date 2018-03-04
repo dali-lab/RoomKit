@@ -59,9 +59,7 @@ extension RoomKit {
 			
 			dataBackup.append((currentRoom!, beacons))
 			
-			var request = generateDataSaveRequest()
-			request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-			request.addValue(adminKey, forHTTPHeaderField: "authorization")
+			var request = generateDataSaveRequest(adminKey: adminKey)
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
 				guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
@@ -80,7 +78,7 @@ extension RoomKit {
 			}.resume()
 		}
 		
-		private func generateDataSaveRequest() -> URLRequest {
+		private func generateDataSaveRequest(adminKey: String) -> URLRequest {
 			var data: [[String:Any]] = []
 			for beaconSet in dataBackup {
 				var entry = [String:Any]()
@@ -94,6 +92,9 @@ extension RoomKit {
 			}
 			
 			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id!)")!)
+			request.addValue("ios", forHTTPHeaderField: "client_os")
+			request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+			request.addValue(adminKey, forHTTPHeaderField: "authorization")
 			request.httpMethod = "PUT"
 			if let data = try? JSON(data).rawData() {
 				request.httpBody = data
@@ -122,8 +123,7 @@ extension RoomKit {
 				callback(false)
 				return
 			}
-			var request = generateDataSaveRequest()
-			request.addValue(adminKey, forHTTPHeaderField: "authorization")
+			var request = generateDataSaveRequest(adminKey: adminKey)
 			request.timeoutInterval = timeout
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
@@ -146,6 +146,7 @@ extension RoomKit {
 			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id!)/train")!)
 			request.httpMethod = "POST"
 			request.addValue(adminKey, forHTTPHeaderField: "authorization")
+			request.addValue("ios", forHTTPHeaderField: "client_ios")
 			
 			self.forceSaveData(timeout: 20) { (success) in
 				if !success {

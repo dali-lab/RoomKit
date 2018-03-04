@@ -135,6 +135,7 @@ extension RoomKit {
 			var request = URLRequest(url: url)
 			request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 			request.addValue(RoomKit.config.userKey, forHTTPHeaderField: "authorization")
+			request.addValue("ios", forHTTPHeaderField: "client_os")
 			request.httpMethod = "POST"
 			guard let data = try? JSON(dict).rawData() else {
 				return
