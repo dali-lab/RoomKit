@@ -22,6 +22,7 @@ public class RoomKit {
 	internal static var delegates: [RoomKitDelegate?] = []
 	
 	public static func configure(config: RoomKit.Config, callback: ((RoomKit.error?) -> Void)?) {
+		RoomKit.unProtConfig = config
 		config.validate { (success, reason) in
 			DispatchQueue.main.async {
 				if !success {

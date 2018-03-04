@@ -220,14 +220,17 @@ extension RoomKit {
 		}
 		
 		static public func getMap(for id: String, callback: ((Map?) -> Void)?) {
-			URLSession.shared.dataTask(with: URL(string: "\(config.server)/maps/\(id)")!) { (data, response, error) in
+			var request = URLRequest(url: URL(string: "\(config.server)/maps/\(id)")!)
+			request.addValue(config.userKey, forHTTPHeaderField: "authorization")
+			
+			URLSession.shared.dataTask(with: request) { (data, response, error) in
 				if let data = data {
 					let object = JSON(data)
 					if let callback = callback {callback(Map.parse(json: object))}
 				}else{
 					if let callback = callback {callback(nil)}
 				}
-			}
+			}.resume()
 		}
 	}
 }

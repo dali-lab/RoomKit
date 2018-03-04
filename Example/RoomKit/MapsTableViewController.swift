@@ -29,6 +29,12 @@ class MapsTableViewController: UITableViewController {
 		}
 	}
 	
+	@IBAction func logoutPressed(_ sender: Any) {
+		UserDefaults.standard.removeObject(forKey: "adminKey")
+		UserDefaults.standard.removeObject(forKey: "userKey")
+		self.performSegue(withIdentifier: "logout", sender: nil)
+	}
+	
 	override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 		return maps.count
 	}

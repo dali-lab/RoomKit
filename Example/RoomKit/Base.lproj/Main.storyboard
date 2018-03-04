@@ -114,6 +114,11 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="Maps" id="n3O-vf-jRh">
+                        <barButtonItem key="leftBarButtonItem" title="Logout" style="plain" id="2Pu-tI-5ds">
+                            <connections>
+                                <action selector="logoutPressed:" destination="Bc0-Oj-hZ1" id="sPd-Am-akq"/>
+                            </connections>
+                        </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" style="plain" systemItem="add" id="zKl-Zb-hGR">
                             <connections>
                                 <action selector="addButtonPressed:" destination="Bc0-Oj-hZ1" id="gpx-II-ki7"/>
@@ -123,6 +128,7 @@
                     <connections>
                         <segue destination="pM8-Wd-Ajc" kind="show" identifier="newMap" id="Mq9-X4-qNx"/>
                         <segue destination="Aif-Mc-yeY" kind="show" identifier="showRooms" id="VT9-ff-YYq"/>
+                        <segue destination="c4h-T9-o2n" kind="showDetail" id="MY4-UQ-IhC"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="bBT-sB-sL2" userLabel="First Responder" sceneMemberID="firstResponder"/>
