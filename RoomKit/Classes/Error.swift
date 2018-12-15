@@ -9,6 +9,8 @@ import Foundation
 
 extension RoomKit {
 	public enum error: Error {
+        case AdminKeyRequired
+        case FailedToConnect
 		case ConfigValidationFailed(reason: String)
 		case FailedToSerializeData
 		case ActionFailed

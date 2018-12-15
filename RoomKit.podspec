@@ -39,4 +39,6 @@ RoomKit is a framework that allows for you to train and then use a model of blue
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
   s.dependency 'SwiftyJSON'
+  s.dependency 'FutureKit'
+  s.dependency 'EmitterKit'
 end

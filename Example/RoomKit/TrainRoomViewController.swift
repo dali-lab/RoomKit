@@ -9,37 +9,43 @@
 import Foundation
 import UIKit
 import RoomKit
+import EmitterKit
 
-class TrainRoomViewController: UIViewController, TrainingDelegate {
+class TrainRoomViewController: UIViewController {
 	@IBOutlet weak var activityIndicator: UIActivityIndicatorView!
 	@IBOutlet weak var progressBar: UIProgressView!
 	@IBOutlet weak var progressLabel: UILabel!
 	
 	var map: RoomKit.Map!
-	var room: Int!
+	var room: RoomKit.Room!
 	var collecting = false
+    var listener: Listener?
 	
 	override func viewWillAppear(_ animated: Bool) {
-		progressBar.progress = RoomKit.Trainer.getInstance().progress[map.rooms[room]] ?? 0
-		progressLabel.text = "\(RoomKit.Trainer.getInstance().progress[map.rooms[room]] ?? 0)"
-		try! RoomKit.Trainer.getInstance().startTraining(map: map, room: map.rooms[room])
-		RoomKit.Trainer.getInstance().pauseTraining()
+        
+        // WHY DO I DO THIS!
+		try! RoomKit.Trainer.instance.startTraining(map: map, room: room)
+		RoomKit.Trainer.instance.pauseTraining()
 		
-		RoomKit.Trainer.getInstance().delegate = self
-		
-		self.title = "\(map.name): \(map.rooms[room])"
+		self.title = "\(map.name): \(room.name)"
+        updateView(progress: RoomKit.Trainer.instance.progress[room] ?? 0)
+        
+        listener = RoomKit.Trainer.instance.progressEvent.on { (progress) in
+            self.updateView(progress: progress[self.room] ?? 0)
+        }
 	}
 	
 	override func viewWillDisappear(_ animated: Bool) {
-		RoomKit.Trainer.getInstance().forceSaveData(timeout: 5) { (success) in
-			RoomKit.Trainer.getInstance().purgeTrainingData()
+		RoomKit.Trainer.instance.forceSaveData(timeout: 5) { (success) in
+			RoomKit.Trainer.instance.purgeTrainingData()
 		}
 	}
-	
-	func trainingUpdate(progress: [String : Float]) {
-		progressBar.progress = progress[map.rooms[room]] ?? 0
-		progressLabel.text = "\((progress[map.rooms[room]] ?? 0) * 100)%"
-	}
+    
+    func updateView(progress: Float) {
+        progressBar.progress = progress
+        let percent = round(progress * 1000) / 10
+        progressLabel.text = "\(percent)%"
+    }
 	
 	@IBAction func collectionButtonPressed(_ sender: UIButton) {
 		if !collecting {
@@ -47,13 +53,13 @@ class TrainRoomViewController: UIViewController, TrainingDelegate {
 			sender.setTitle("Stop collecting data", for: .normal)
 			activityIndicator.startAnimating()
 			navigationItem.hidesBackButton = true
-			RoomKit.Trainer.getInstance().resume(with: nil)
+			RoomKit.Trainer.instance.resume(with: nil)
 		}else{
 			collecting = false
 			sender.setTitle("Start collecting data", for: .normal)
 			activityIndicator.stopAnimating()
 			navigationItem.hidesBackButton = false
-			RoomKit.Trainer.getInstance().pauseTraining()
+			RoomKit.Trainer.instance.pauseTraining()
 		}
 	}
 }

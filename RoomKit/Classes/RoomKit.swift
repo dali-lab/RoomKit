@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreLocation
+import EmitterKit
 
 public class RoomKit {
 	private static var unProtConfig: RoomKit.Config!
@@ -52,14 +53,14 @@ public class RoomKit {
 	}
 	
 	private static func startMonitoring() {
-		Map.getAll { (maps, error) in
-			guard error != nil else {
-				return
-			}
-			
-			for map in maps {
-				BeaconManager.getInstance().monitorMap(map: map)
-			}
-		}
+        _ = Map.getAll().onSuccess { (maps) in
+            for map in maps {
+                BeaconManager.instance.monitorMap(map: map)
+            }
+        }
 	}
+    
+    internal static func emitOnMain(event: Event<Any>, value: Any) {
+        event.emit(value)
+    }
 }

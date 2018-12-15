@@ -8,39 +8,40 @@
 import Foundation
 import CoreLocation
 import SwiftyJSON
+import FutureKit
+import EmitterKit
 
 extension RoomKit {
 	public class Trainer {
+        private static var _instance: RoomKit.Trainer?
+        public static var instance: RoomKit.Trainer {
+            if _instance == nil {
+                _instance = Trainer()
+            }
+            return _instance!
+        }
+        
 		private static let optimalNumEntries = 500
-		static var instance: RoomKit.Trainer!
-		public var delegate: TrainingDelegate?
+        public let progressEvent = Event<[Room: Float]>()
 		var trainingMap: Map?
-		var currentRoom: String?
+		var currentRoom: Room?
 		var paused = false
-		var entriesSavedForRoom: [String: Int] = [:]
+		var entriesSavedForRoom: [Room: Int] = [:]
 		var locationManager = CLLocationManager()
-		var dataBackup: [(room: String, beacons: [CLBeacon])] = []
-		public var progress: [String: Float] {
-			var progress = [String:Float]()
+		var dataBackup: [(room: Room, beacons: [CLBeacon])] = []
+		public var progress: [Room: Float] {
+			var progress = [Room:Float]()
 			for (room, numEntries) in self.entriesSavedForRoom {
 				progress[room] = Float(numEntries) / Float(Trainer.optimalNumEntries)
 			}
 			return progress
 		}
 		
-		private init?() {
-			if RoomKit.Trainer.instance != nil {
-				return nil
-			}
-			RoomKit.Trainer.instance = self
-		}
+		private init() {
+            progressEvent.main = true
+        }
 		
-		public static func getInstance() -> Trainer {
-			return Trainer() ?? RoomKit.Trainer.instance
-		}
-		
-		public func startTraining(map: RoomKit.Map, room: String) throws {
-			assert(map.rooms.contains(room), "Map's room's must contain the given room")
+		public func startTraining(map: RoomKit.Map, room: Room) throws {
 			if trainingMap != nil {
 				throw error.AlreadyTrainingMap
 			}
@@ -48,7 +49,7 @@ extension RoomKit {
 			trainingMap = map
 			dataBackup.removeAll()
 			paused = false
-			BeaconManager.getInstance().startingRangingMap(map: map)
+			BeaconManager.instance.startRangingMap(map: map)
 			NotificationCenter.default.addObserver(self, selector: #selector(beaconsDidRange(notification:)), name: Notification.Name.RoomKit.BeaconsDidRange, object: map)
 		}
 		
@@ -69,11 +70,7 @@ extension RoomKit {
 				}
 				
 				self.entriesSavedForRoom[self.currentRoom!] = (self.entriesSavedForRoom[self.currentRoom!] ?? 0) + self.dataBackup.count
-				if let delegate = self.delegate {
-					DispatchQueue.main.async {
-						delegate.trainingUpdate(progress: self.progress)
-					}
-				}
+				self.progressEvent.emit(self.progress)
 				self.dataBackup.removeAll()
 			}.resume()
 		}
@@ -82,7 +79,7 @@ extension RoomKit {
 			var data: [[String:Any]] = []
 			for beaconSet in dataBackup {
 				var entry = [String:Any]()
-				entry["room"] = beaconSet.room
+				entry["room"] = beaconSet.room.name
 				var entryBeacons = [[String:Any]]()
 				for beacon in beaconSet.beacons {
 					entryBeacons.append(["major": beacon.major, "minor": beacon.minor, "strength": beacon.accuracy])
@@ -92,7 +89,7 @@ extension RoomKit {
 			}
 			
 			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id!)")!)
-			request.addValue("ios", forHTTPHeaderField: "client_os")
+			request.addValue("ios", forHTTPHeaderField: "os")
 			request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 			request.addValue(adminKey, forHTTPHeaderField: "authorization")
 			request.httpMethod = "PUT"
@@ -107,7 +104,7 @@ extension RoomKit {
 			paused = true
 		}
 		
-		public func resume(with room: String?) {
+		public func resume(with room: Room?) {
 			if let room = room {
 				currentRoom = room
 			}
@@ -138,36 +135,40 @@ extension RoomKit {
 			}
 		}
 		
-		public func completeTraining(callback: @escaping (_ success: Bool, _ error: Error?) -> Void) {
-			guard let adminKey = RoomKit.config.adminKey else {
-				return
-			}
+		public func completeTraining() -> Future<Void> {
+            guard let adminKey = RoomKit.config.adminKey else {
+                return Future<Void>(fail: RoomKit.error.AdminKeyRequired)
+            }
+            
+            let promise = Promise<Void>()
+            promise.main = true
 			
 			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id!)/train")!)
 			request.httpMethod = "POST"
 			request.addValue(adminKey, forHTTPHeaderField: "authorization")
-			request.addValue("ios", forHTTPHeaderField: "client_ios")
+			request.addValue("ios", forHTTPHeaderField: "os")
 			
 			self.forceSaveData(timeout: 20) { (success) in
-				if !success {
-					callback(false, nil)
+				guard success else {
+                    promise.failIfNotCompleted(RoomKit.error.FailedToConnect)
 					return
 				}
 				
 				URLSession.shared.dataTask(with: request) { (data, response, error) in
-					guard let httpResponse = response as? HTTPURLResponse else {
-						callback(false, error)
-						return
-					}
-					
-					callback(httpResponse.statusCode == 200, error)
+					if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                        promise.completeWithSuccess(Void())
+                    } else {
+                        promise.completeWithFail(error ?? RoomKit.error.UnknownError)
+                    }
 				}.resume()
 			}
+            
+            return promise.future
 		}
 		
 		public func purgeTrainingData() {
 			if let trainingMap = trainingMap {
-				BeaconManager.getInstance().stopMonitoring(map: trainingMap)
+				BeaconManager.instance.stopMonitoring(map: trainingMap)
 			}
 			trainingMap = nil
 			currentRoom = nil

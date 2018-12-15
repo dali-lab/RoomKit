@@ -16,7 +16,7 @@ class TestViewController: UIViewController, RoomKitDelegate {
 	var map: RoomKit.Map!
 	var delegateID: RoomKitDelegateID?
 	var inside = false
-	var room: String?
+	var room: RoomKit.Room?
 	
 	override func viewWillAppear(_ animated: Bool) {
 		delegateID = RoomKit.registerDelegate(delegate: self)
@@ -38,8 +38,8 @@ class TestViewController: UIViewController, RoomKitDelegate {
 		self.update()
 	}
 	
-	func determined(room: Int, with name: String, on map: RoomKit.Map) {
-		self.room = name
+    func determined(room: RoomKit.Room, on map: RoomKit.Map) {
+		self.room = room
 		self.update()
 	}
 	
@@ -49,6 +49,6 @@ class TestViewController: UIViewController, RoomKitDelegate {
 	}
 	
 	func update() {
-		predictionLabel.text = room ?? "Loading..."
+		predictionLabel.text = room?.name ?? "Loading..."
 	}
 }

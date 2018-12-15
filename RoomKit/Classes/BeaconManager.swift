@@ -7,26 +7,47 @@
 
 import Foundation
 import CoreLocation
+import EmitterKit
+import FutureKit
 
 extension RoomKit {
+    
+    /**
+     Controls all beacon related information
+     */
 	public class BeaconManager: NSObject, CLLocationManagerDelegate {
-		static var instance: BeaconManager?
+		private static var _instance: BeaconManager?
+        public static var instance: BeaconManager {
+            if _instance == nil {
+                _instance = BeaconManager()
+            }
+            return _instance!
+        }
+        
+        /// The location manager used to retrieve this information
 		private let locationManager = CLLocationManager()
+        /// The maps that are being ranged
 		private var rangingMaps = Set<Map>()
+        /// The maps being monitored
 		private var monitoredMaps = Set<Map>()
+        /// The maps for each region
 		private var regionMapping: [String:Map] = [:]
+        /// The current status of permissions
 		private var permissionsStatus: CLAuthorizationStatus!
+        
+        public var permissionStatusChanged = Event<CLAuthorizationStatus>()
 		
+        /// Setup
 		override init() {
 			super.init()
-			BeaconManager.instance = self
 			locationManager.delegate = self
 		}
 		
-		static func getInstance() -> BeaconManager {
-			return instance ?? BeaconManager()
-		}
-		
+        /**
+         Monitor this given map
+         
+         - parameter map: The map to monitor
+         */
 		func monitorMap(map: RoomKit.Map) {
 			let uuid = UUID(uuidString: map.uuid)!
 			let region = CLBeaconRegion(proximityUUID: uuid, identifier: map.id)
@@ -35,6 +56,11 @@ extension RoomKit {
 			self.locationManager.startMonitoring(for: region)
 		}
 		
+        /**
+         End monitoring
+
+         - parameter map: Cancel the map monitoring
+         */
 		func stopMonitoring(map: RoomKit.Map) {
 			let uuid = UUID(uuidString: map.uuid)!
 			let region = CLBeaconRegion(proximityUUID: uuid, identifier: map.id)
@@ -42,7 +68,10 @@ extension RoomKit {
 			self.locationManager.stopMonitoring(for: region)
 		}
 		
-		func startingRangingMap(map: RoomKit.Map) {
+        /**
+         Range the becons for the given map
+         */
+		internal func startRangingMap(map: RoomKit.Map) {
 			if rangingMaps.insert(map).inserted {
 				let uuid = UUID(uuidString: map.uuid)!
 				let region = CLBeaconRegion(proximityUUID: uuid, identifier: map.id)
@@ -51,7 +80,10 @@ extension RoomKit {
 			}
 		}
 		
-		func stopRangingMap(map: RoomKit.Map) {
+        /**
+         Cancel ranging for the map
+         */
+		internal func stopRangingMap(map: RoomKit.Map) {
 			if rangingMaps.remove(map) != nil {
 				let uuid = UUID(uuidString: map.uuid)!
 				let region = CLBeaconRegion(proximityUUID: uuid, identifier: map.id)
@@ -59,6 +91,7 @@ extension RoomKit {
 			}
 		}
 		
+        /// Enter region
 		public func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
 			if let map = regionMapping[(region as! CLBeaconRegion).proximityUUID.uuidString], monitoredMaps.contains(map) {
 				for delegate in RoomKit.delegates {
@@ -69,6 +102,7 @@ extension RoomKit {
 			}
 		}
 		
+        /// Exit region
 		public func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
 			if let map = regionMapping[(region as! CLBeaconRegion).proximityUUID.uuidString], monitoredMaps.contains(map) {
 				for delegate in RoomKit.delegates {
@@ -79,39 +113,30 @@ extension RoomKit {
 			}
 		}
 		
+        /// Beacon ranging received
 		public func locationManager(_ manager: CLLocationManager, didRangeBeacons beacons: [CLBeacon], in region: CLBeaconRegion) {
 			if let map = regionMapping[region.proximityUUID.uuidString] {
 				NotificationCenter.default.post(name: NSNotification.Name.RoomKit.BeaconsDidRange, object: map, userInfo: ["beacons": beacons])
 			}
 		}
+        
+        /// Request permissions for access to location
+        public func requestPermissions() -> Future<CLAuthorizationStatus> {
+            let promise = Promise<CLAuthorizationStatus>()
+            permissionStatusChanged.once { (status) in
+                promise.completeWithSuccess(status)
+            }
+            return promise.future
+        }
 		
-		var permissionsCallback: ((_ success: Bool) -> Void)? = nil
-		public static func requestPermissions(background: Bool, callback: @escaping (_ success: Bool) -> Void) {
-			let instance = BeaconManager.getInstance()
-			if instance.permissionsStatus != nil && instance.permissionsStatus != CLAuthorizationStatus.notDetermined {
-				callback(true)
-				return
-			}
-			
-			if background {
-				instance.locationManager.requestAlwaysAuthorization()
-			}else{
-				instance.locationManager.requestWhenInUseAuthorization()
-			}
-			instance.permissionsCallback = callback
+        /// Request permissions for access to location
+		public static func requestPermissions() -> Future<CLAuthorizationStatus> {
+			return BeaconManager.instance.requestPermissions()
 		}
 		
-		public func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        private func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
 			permissionsStatus = status
-			if status == .authorizedAlways || status == .authorizedWhenInUse {
-				if let permissionsCallback = permissionsCallback {
-					permissionsCallback(true)
-				}
-			}else if status == .denied || status == .restricted {
-				if let permissionsCallback = permissionsCallback {
-					permissionsCallback(false)
-				}
-			}
+			permissionStatusChanged.emit(status)
 		}
 	}
 }

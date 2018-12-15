@@ -14,19 +14,20 @@ class ViewController: UIViewController {
 	@IBOutlet weak var adminKeyTextField: UITextField!
 	@IBOutlet weak var userKeyTextField: UITextField!
 	@IBOutlet weak var loader: UIActivityIndicatorView!
-	
-	var dict = ["serverURL": "https://roomkit.herokuapp.com"]
+    
+    var adminKey: String?
+    var userKey: String?
 	
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-		dict["adminKey"] = UserDefaults.standard.string(forKey: "adminKey") ?? dict["adminKey"]
-		dict["userKey"] = UserDefaults.standard.string(forKey: "userKey") ?? dict["userKey"]
+		adminKey = UserDefaults.standard.string(forKey: "adminKey") ?? adminKey
+		userKey = UserDefaults.standard.string(forKey: "userKey") ?? userKey
 		self.authenticate()
     }
 	
 	func authenticate() {
-		guard dict["adminKey"] != nil && dict["userKey"] != nil else {
+		guard let adminKey = adminKey, let userKey = userKey else {
 			return
 		}
 		adminKeyTextField.resignFirstResponder()
@@ -37,7 +38,7 @@ class ViewController: UIViewController {
 		
 		loader.startAnimating()
 		
-		let config = RoomKit.Config(dict: dict)!
+        let config = RoomKit.Config(userKey: userKey, adminKey: adminKey)
 		RoomKit.configure(config: config) { (error) in
 			self.loader.stopAnimating()
 			if let error = error {
@@ -45,7 +46,10 @@ class ViewController: UIViewController {
 				self.userKeyTextField.isEnabled = true
 				self.updateConnectEnabled()
 				print(error)
-				self.show(UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert), sender: nil)
+                
+                let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+                alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
+				self.show(alert, sender: nil)
 			}else{
 				self.performSegue(withIdentifier: "authenticated", sender: nil)
 			}
@@ -59,8 +63,8 @@ class ViewController: UIViewController {
 	@IBAction func connectButtonPressed(_ sender: Any) {
 		UserDefaults.standard.set(adminKeyTextField.text, forKey: "adminKey")
 		UserDefaults.standard.set(userKeyTextField.text, forKey: "userKey")
-		dict["adminKey"] = adminKeyTextField.text
-		dict["userKey"] = userKeyTextField.text
+		adminKey = adminKeyTextField.text
+		userKey = userKeyTextField.text
 		self.authenticate()
 	}
 	

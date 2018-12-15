@@ -22,11 +22,10 @@ class MapsTableViewController: UITableViewController {
 	}
 	
 	override func viewWillAppear(_ animated: Bool) {
-		RoomKit.Map.getAll { (maps, error) in
-			self.maps = maps
-			print(maps.first?.id)
-			self.tableView.reloadData()
-		}
+        _ = RoomKit.Map.getAll().onSuccess { (maps) in
+            self.maps = maps
+            self.tableView.reloadData()
+        }
 	}
 	
 	@IBAction func logoutPressed(_ sender: Any) {
@@ -52,7 +51,7 @@ class MapsTableViewController: UITableViewController {
 	
 	override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
 		if let dest = segue.destination as? RoomsViewController {
-			dest.map = sender as! RoomKit.Map
+			dest.map = sender as? RoomKit.Map
 		}
 	}
 }
