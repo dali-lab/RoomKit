@@ -29,9 +29,9 @@ class MapsTableViewController: UITableViewController {
 	}
 	
 	@IBAction func logoutPressed(_ sender: Any) {
-		UserDefaults.standard.removeObject(forKey: "adminKey")
-		UserDefaults.standard.removeObject(forKey: "userKey")
-		self.performSegue(withIdentifier: "logout", sender: nil)
+        UserDefaults.standard.removeObject(forKey: "adminKey")
+        UserDefaults.standard.removeObject(forKey: "userKey")
+		self.navigationController?.dismiss(animated: true, completion: nil)
 	}
 	
 	override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {

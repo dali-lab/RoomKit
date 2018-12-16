@@ -82,7 +82,7 @@
                         <outlet property="connectButton" destination="CJj-Xp-pny" id="sxS-QC-koV"/>
                         <outlet property="loader" destination="mOZ-Ow-eTe" id="HwY-G8-HWa"/>
                         <outlet property="userKeyTextField" destination="s87-hp-K8V" id="BUi-7R-RtK"/>
-                        <segue destination="3xN-oz-3LT" kind="show" identifier="authenticated" id="vJQ-bi-4nZ"/>
+                        <segue destination="3xN-oz-3LT" kind="presentation" identifier="authenticated" id="vJQ-bi-4nZ"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="jyy-q6-nUR" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -115,7 +115,7 @@
                     <navigationItem key="navigationItem" title="Maps" id="n3O-vf-jRh">
                         <barButtonItem key="leftBarButtonItem" title="Logout" style="plain" id="2Pu-tI-5ds">
                             <connections>
-                                <action selector="logoutPressed:" destination="Bc0-Oj-hZ1" id="sPd-Am-akq"/>
+                                <action selector="logoutPressed:" destination="Bc0-Oj-hZ1" id="mu7-a2-tp8"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" style="plain" systemItem="add" id="zKl-Zb-hGR">
@@ -127,7 +127,6 @@
                     <connections>
                         <segue destination="pM8-Wd-Ajc" kind="show" identifier="newMap" id="Mq9-X4-qNx"/>
                         <segue destination="Aif-Mc-yeY" kind="show" identifier="showRooms" id="VT9-ff-YYq"/>
-                        <segue destination="c4h-T9-o2n" kind="showDetail" id="MY4-UQ-IhC"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="bBT-sB-sL2" userLabel="First Responder" sceneMemberID="firstResponder"/>
