@@ -29,9 +29,7 @@ extension RoomKit {
 		var locationManager = CLLocationManager()
 		var dataBackup: [(room: Room, beacons: [CLBeacon])] = []
 		
-		private init() {
-            progressEvent.main = true
-        }
+		private init() { }
 		
 		public func startTraining(map: RoomKit.Map, room: Room) throws {
 			if trainingMap != nil {
@@ -149,7 +147,6 @@ extension RoomKit {
             }
             
             let promise = Promise<Void>()
-            promise.main = true
 			
             let urlString = "\(RoomKit.config.server)/maps/\(trainingMap!.id!)/train"
 			var request = URLRequest(url: URL(string: urlString)!)

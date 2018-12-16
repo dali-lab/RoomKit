@@ -84,9 +84,9 @@ extension RoomKit {
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
                 if let data = data, let json = try? JSON(data: data), let map = Map(json: json) {
-                    DispatchQueue.main.async { promise.completeWithSuccess(map) }
+                    promise.completeWithSuccess(map)
                 } else {
-                    DispatchQueue.main.async { promise.completeWithFail(RoomKit.error.ActionFailed) }
+                    promise.completeWithFail(RoomKit.error.ActionFailed)
                 }
 			}.resume()
             
@@ -101,8 +101,6 @@ extension RoomKit {
             request.httpMethod = "GET"
             
             let promise = Promise<[Map]>()
-            promise.dispatchQueue = OperationQueue.current?.underlyingQueue
-            promise.main = promise.dispatchQueue == nil
             
             URLSession.shared.dataTask(with: request) { (data, response, error) in
                 guard let data = data, let json = try? JSON(data: data), let array = json.array else {
@@ -145,6 +143,8 @@ extension RoomKit {
             guard let adminKey = RoomKit.config.adminKey else {
                 return Future<Room>(fail: RoomKit.error.AdminKeyRequired)
             }
+            let dict: [String:Any] = ["name": name]
+            guard let data = try? JSON(dict).rawData() else { return Future(fail: RoomKit.error.FailedToSerializeData ) }
             
             let promise = Promise<Room>()
             
@@ -152,8 +152,6 @@ extension RoomKit {
             request.httpMethod = "POST"
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
             request.addValue(adminKey, forHTTPHeaderField: "authorization")
-            let dict: [String:Any] = ["name": name]
-            guard let data = try? JSON(dict).rawData() else { return Future(fail: RoomKit.error.FailedToSerializeData ) }
             request.httpBody = data
             
             URLSession.shared.dataTask(with: request) { (data, response, error) in
@@ -182,15 +180,11 @@ extension RoomKit {
             
             URLSession.shared.dataTask(with: request) { (data, response, error) in
                 if let error = error {
-                    DispatchQueue.main.async {
-                        promise.completeWithFail(error)
-                    }
+                    promise.completeWithFail(error)
                 }
                 
                 guard let data = data, let json = try? JSON(data: data), let array = json.array else {
-                    DispatchQueue.main.async {
-                        promise.completeWithFail("Failed to parse data")
-                    }
+                    promise.completeWithFail("Failed to parse data")
                     return
                 }
                 
@@ -202,9 +196,7 @@ extension RoomKit {
                 }
                 
                 self.rooms = rooms
-                DispatchQueue.main.async {
-                    promise.completeWithSuccess(rooms)
-                }
+                promise.completeWithSuccess(rooms)
             }.resume()
             
             return promise.future
@@ -290,13 +282,11 @@ extension RoomKit {
                     maxClass = countArray.enumerated().max(by: { (tuple1, tuple2) -> Bool in
                         return tuple1.element > tuple2.element
                     })!.offset
-				}else{
+				} else {
 					maxClass = roomIndex
 				}
 				
-                DispatchQueue.main.async {
-                    self.roomDeterminedEvent.emit(self.rooms![maxClass])
-                }
+                self.roomDeterminedEvent.emit(self.rooms![maxClass])
 			}.resume()
 		}
         
