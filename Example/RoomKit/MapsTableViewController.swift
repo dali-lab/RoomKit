@@ -24,7 +24,9 @@ class MapsTableViewController: UITableViewController {
 	override func viewWillAppear(_ animated: Bool) {
         _ = RoomKit.Map.getAll().onSuccess { (maps) in
             self.maps = maps
-            self.tableView.reloadData()
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
         }
 	}
 	

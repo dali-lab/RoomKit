@@ -33,8 +33,10 @@ class RoomsViewController: UIViewController, UITableViewDelegate, UITableViewDat
 		
         _ = RoomKit.BeaconManager.requestPermissions().onSuccess { (status) in
             if status == CLAuthorizationStatus.denied {
-                let alert = UIAlertController(title: "Enable Location Services", message: "Location services are required!", preferredStyle: .alert)
-                self.present(alert, animated: true, completion: nil)
+                DispatchQueue.main.async {
+                    let alert = UIAlertController(title: "Enable Location Services", message: "Location services are required!", preferredStyle: .alert)
+                    self.present(alert, animated: true, completion: nil)
+                }
             }
         }
 	}
@@ -42,7 +44,9 @@ class RoomsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func reloadData() {
         _ = map.getRooms().onSuccess { (rooms) in
             self.rooms = rooms
-            self.tableView.reloadData()
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
         }.onFail { (error)  in
             print(error)
         }
@@ -121,17 +125,19 @@ class RoomsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             let success = result.isSuccess
             let error = result.error
             
-            let alert = UIAlertController(title: success ? "Success!" : "ERROR", message: success ? "The model is trained!" : error?.localizedDescription ?? "", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-            
-            self.present(alert, animated: true, completion: {
-                UIView.animate(withDuration: 2, animations: {
-                    view.effect = nil
-                }, completion: { (_) in
-                    view.removeFromSuperview()
+            DispatchQueue.main.async {
+                let alert = UIAlertController(title: success ? "Success!" : "ERROR", message: success ? "The model is trained!" : error?.localizedDescription ?? "", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+                
+                self.present(alert, animated: true, completion: {
+                    UIView.animate(withDuration: 2, animations: {
+                        view.effect = nil
+                    }, completion: { (_) in
+                        view.removeFromSuperview()
+                    })
+                    activityIndicator.stopAnimating()
                 })
-                activityIndicator.stopAnimating()
-            })
+            }
         }
 	}
 }

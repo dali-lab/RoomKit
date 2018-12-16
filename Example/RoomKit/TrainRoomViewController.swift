@@ -23,7 +23,9 @@ class TrainRoomViewController: UIViewController {
     
     override func viewDidLoad() {
         listener = RoomKit.Trainer.instance.progressEvent.on { (tuple) in
-            self.updateView(progress: tuple.progress)
+            DispatchQueue.main.async {
+                self.updateView(progress: tuple.progress)
+            }
         }
     }
 	
@@ -42,9 +44,11 @@ class TrainRoomViewController: UIViewController {
         RoomKit.Trainer.instance.forceSaveData(timeout: 5).onSuccess { (_) in
             RoomKit.Trainer.instance.purgeTrainingData()
         }.onFail { (error) in
-            let alert = UIAlertController(title: "Failed to save data", message: nil, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
-            alert.show(self.navigationController!, sender: nil)
+            DispatchQueue.main.async {
+                let alert = UIAlertController(title: "Failed to save data", message: nil, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
+                alert.show(self.navigationController!, sender: nil)
+            }
         }
 	}
     

@@ -40,19 +40,21 @@ class ViewController: UIViewController {
 		
         let config = RoomKit.Config(userKey: userKey, adminKey: adminKey)
 		RoomKit.configure(config: config) { (error) in
-			self.loader.stopAnimating()
-			if let error = error {
-				self.adminKeyTextField.isEnabled = true
-				self.userKeyTextField.isEnabled = true
-				self.updateConnectEnabled()
-				print(error)
-                
-                let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
-                alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
-				self.show(alert, sender: nil)
-			}else{
-				self.performSegue(withIdentifier: "authenticated", sender: nil)
-			}
+            DispatchQueue.main.async {
+                self.loader.stopAnimating()
+                if let error = error {
+                    self.adminKeyTextField.isEnabled = true
+                    self.userKeyTextField.isEnabled = true
+                    self.updateConnectEnabled()
+                    print(error)
+                    
+                    let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+                    alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
+                    self.show(alert, sender: nil)
+                }else{
+                    self.performSegue(withIdentifier: "authenticated", sender: nil)
+                }
+            }
 		}
 	}
 	

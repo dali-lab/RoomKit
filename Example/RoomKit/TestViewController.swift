@@ -24,11 +24,15 @@ class TestViewController: UIViewController {
     override func viewDidLoad() {
         roomDeterminedListener = map.roomDeterminedEvent.on { (room) in
             self.room = room
-            self.update()
+            DispatchQueue.main.async {
+                self.update()
+            }
         }
         regionStateListener = map.regionStatusEvent.on { (state) in
             self.inside = (state == .inside)
-            self.update()
+            DispatchQueue.main.async {
+                self.update()
+            }
         }
     }
     

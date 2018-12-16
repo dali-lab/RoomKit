@@ -30,11 +30,15 @@ class NewMapTableViewController: UITableViewController {
 		}
 		
         RoomKit.Map.createNew(name: name, uuid: uuid).onSuccess { (map) in
-            self.navigationController?.popViewController(animated: true)
+            DispatchQueue.main.async {
+                self.navigationController?.popViewController(animated: true)
+            }
         }.onFail { (error) in
-            let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-            self.present(alert, animated: true, completion: nil)
+            DispatchQueue.main.async {
+                let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+            }
         }
 	}
 	
