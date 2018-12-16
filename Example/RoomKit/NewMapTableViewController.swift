@@ -29,7 +29,7 @@ class NewMapTableViewController: UITableViewController {
 			return
 		}
 		
-        RoomKit.Map.createNew(name: name, uuid: uuid.uuidString).onSuccess { (map) in
+        RoomKit.Map.createNew(name: name, uuid: uuid).onSuccess { (map) in
             self.navigationController?.popViewController(animated: true)
         }.onFail { (error) in
             let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)

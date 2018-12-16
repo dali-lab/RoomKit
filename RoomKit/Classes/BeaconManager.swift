@@ -11,7 +11,6 @@ import EmitterKit
 import FutureKit
 
 extension RoomKit {
-    
     /**
      Controls all beacon related information
      */
@@ -31,10 +30,10 @@ extension RoomKit {
         /// The maps being monitored
 		private var monitoredMaps = Set<Map>()
         /// The maps for each region
-		private var regionMapping: [String:Map] = [:]
+		private var regionMapping: [UUID:Map] = [:]
         /// The current status of permissions
 		private var permissionsStatus: CLAuthorizationStatus!
-        
+        /// The status of the permisison changed
         public var permissionStatusChanged = Event<CLAuthorizationStatus>()
 		
         /// Setup
@@ -51,9 +50,9 @@ extension RoomKit {
 		func monitorMap(map: RoomKit.Map) {
 			let uuid = UUID(uuidString: map.uuid)!
 			let region = CLBeaconRegion(proximityUUID: uuid, identifier: map.id)
-			regionMapping[region.proximityUUID.uuidString] = map
+			regionMapping[uuid] = map
 			monitoredMaps.insert(map)
-			self.locationManager.startMonitoring(for: region)
+			locationManager.startMonitoring(for: region)
 		}
 		
         /**
@@ -75,7 +74,7 @@ extension RoomKit {
 			if rangingMaps.insert(map).inserted {
 				let uuid = UUID(uuidString: map.uuid)!
 				let region = CLBeaconRegion(proximityUUID: uuid, identifier: map.id)
-				regionMapping[region.proximityUUID.uuidString] = map
+				regionMapping[region.proximityUUID] = map
 				self.locationManager.startRangingBeacons(in: region)
 			}
 		}
@@ -91,32 +90,21 @@ extension RoomKit {
 			}
 		}
 		
-        /// Enter region
-		public func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
-			if let map = regionMapping[(region as! CLBeaconRegion).proximityUUID.uuidString], monitoredMaps.contains(map) {
-				for delegate in RoomKit.delegates {
-					if let delegate = delegate {
-						delegate.enteredMappedRegion(map: map)
-					}
-				}
-			}
-		}
-		
-        /// Exit region
-		public func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
-			if let map = regionMapping[(region as! CLBeaconRegion).proximityUUID.uuidString], monitoredMaps.contains(map) {
-				for delegate in RoomKit.delegates {
-					if let delegate = delegate {
-						delegate.exitedMappedRegion(map: map)
-					}
-				}
-			}
-		}
+        /// Region state
+        public func locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) {
+            guard let beaconRegion = region as? CLBeaconRegion else {
+                return
+            }
+            // If monitoring a map for this region...
+            if let map = regionMapping[beaconRegion.proximityUUID], monitoredMaps.contains(map) {
+                RoomKit.mapRegionStateChange.emit((map, state))
+            }
+        }
 		
         /// Beacon ranging received
 		public func locationManager(_ manager: CLLocationManager, didRangeBeacons beacons: [CLBeacon], in region: CLBeaconRegion) {
-			if let map = regionMapping[region.proximityUUID.uuidString] {
-				NotificationCenter.default.post(name: NSNotification.Name.RoomKit.BeaconsDidRange, object: map, userInfo: ["beacons": beacons])
+			if let map = regionMapping[region.proximityUUID] {
+                map.beaconsDidRange.emit(beacons)
 			}
 		}
         

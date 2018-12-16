@@ -9,43 +9,42 @@
 import Foundation
 import UIKit
 import RoomKit
+import EmitterKit
+import CoreLocation
 
-class TestViewController: UIViewController, RoomKitDelegate {
+class TestViewController: UIViewController {
 	@IBOutlet weak var predictionLabel: UILabel!
 	
 	var map: RoomKit.Map!
-	var delegateID: RoomKitDelegateID?
 	var inside = false
 	var room: RoomKit.Room?
-	
+    var roomDeterminedListener: Listener?
+    var regionStateListener: Listener?
+    
+    override func viewDidLoad() {
+        roomDeterminedListener = map.roomDeterminedEvent.on { (room) in
+            self.room = room
+            self.update()
+        }
+        regionStateListener = map.regionStatusEvent.on { (state) in
+            self.inside = (state == .inside)
+            self.update()
+        }
+    }
+    
 	override func viewWillAppear(_ animated: Bool) {
-		delegateID = RoomKit.registerDelegate(delegate: self)
 		map.startPredictingRooms()
-		self.predictionLabel.text = "Loading..."
+		predictionLabel.text = "Loading..."
+        regionStateListener?.isListening = true
+        roomDeterminedListener?.isListening = true
 	}
 	
 	override func viewWillDisappear(_ animated: Bool) {
 		inside = false
 		room = nil
 		map.stopPredictingRooms()
-		if let delegateID = delegateID {
-			RoomKit.unregisterDelegate(i: delegateID)
-		}
-	}
-	
-	func enteredMappedRegion(map: RoomKit.Map) {
-		inside = true
-		self.update()
-	}
-	
-    func determined(room: RoomKit.Room, on map: RoomKit.Map) {
-		self.room = room
-		self.update()
-	}
-	
-	func exitedMappedRegion(map: RoomKit.Map) {
-		inside = false
-		self.update()
+        regionStateListener?.isListening = false
+        roomDeterminedListener?.isListening = false
 	}
 	
 	func update() {

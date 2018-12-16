@@ -20,31 +20,37 @@ class TrainRoomViewController: UIViewController {
 	var room: RoomKit.Room!
 	var collecting = false
     var listener: Listener?
+    
+    override func viewDidLoad() {
+        listener = RoomKit.Trainer.instance.progressEvent.on { (tuple) in
+            self.updateView(progress: tuple.progress)
+        }
+    }
 	
 	override func viewWillAppear(_ animated: Bool) {
+        self.title = "\(map.name): \(room.name)"
+        updateView(progress: Float(room!.percentTrained))
+        listener?.isListening = true
         
         // WHY DO I DO THIS!
-		try! RoomKit.Trainer.instance.startTraining(map: map, room: room)
-		RoomKit.Trainer.instance.pauseTraining()
-		
-		self.title = "\(map.name): \(room.name)"
-        updateView(progress: RoomKit.Trainer.instance.progress[room] ?? 0)
-        
-        listener = RoomKit.Trainer.instance.progressEvent.on { (progress) in
-            self.updateView(progress: progress[self.room] ?? 0)
-        }
+        try? RoomKit.Trainer.instance.startTraining(map: map, room: room)
+        RoomKit.Trainer.instance.pauseTraining()
 	}
 	
 	override func viewWillDisappear(_ animated: Bool) {
-		RoomKit.Trainer.instance.forceSaveData(timeout: 5) { (success) in
-			RoomKit.Trainer.instance.purgeTrainingData()
-		}
+        listener?.isListening = false
+        RoomKit.Trainer.instance.forceSaveData(timeout: 5).onSuccess { (_) in
+            RoomKit.Trainer.instance.purgeTrainingData()
+        }.onFail { (error) in
+            let alert = UIAlertController(title: "Failed to save data", message: nil, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
+            alert.show(self.navigationController!, sender: nil)
+        }
 	}
     
     func updateView(progress: Float) {
         progressBar.progress = progress
-        let percent = round(progress * 1000) / 10
-        progressLabel.text = "\(percent)%"
+        progressLabel.text = "\(round(progress * 1000) / 10)%"
     }
 	
 	@IBAction func collectionButtonPressed(_ sender: UIButton) {

@@ -21,21 +21,13 @@ extension RoomKit {
             return _instance!
         }
         
-		private static let optimalNumEntries = 500
-        public let progressEvent = Event<[Room: Float]>()
+        public let progressEvent = Event<(room: Room, progress: Float)>()
+        private var beaconsDidRangeListner: Listener?
 		var trainingMap: Map?
 		var currentRoom: Room?
 		var paused = false
-		var entriesSavedForRoom: [Room: Int] = [:]
 		var locationManager = CLLocationManager()
 		var dataBackup: [(room: Room, beacons: [CLBeacon])] = []
-		public var progress: [Room: Float] {
-			var progress = [Room:Float]()
-			for (room, numEntries) in self.entriesSavedForRoom {
-				progress[room] = Float(numEntries) / Float(Trainer.optimalNumEntries)
-			}
-			return progress
-		}
 		
 		private init() {
             progressEvent.main = true
@@ -50,16 +42,30 @@ extension RoomKit {
 			dataBackup.removeAll()
 			paused = false
 			BeaconManager.instance.startRangingMap(map: map)
-			NotificationCenter.default.addObserver(self, selector: #selector(beaconsDidRange(notification:)), name: Notification.Name.RoomKit.BeaconsDidRange, object: map)
+            beaconsDidRangeListner = map.beaconsDidRange.on { (beacons) in
+                self.beaconsDidRange(beacons)
+            }
 		}
+        
+        public func pauseTraining() {
+            paused = true
+            beaconsDidRangeListner?.isListening = false
+        }
+        
+        public func resume(with room: Room?) {
+            if let room = room {
+                currentRoom = room
+            }
+            paused = false
+            beaconsDidRangeListner?.isListening = true
+        }
 		
-		@objc private func beaconsDidRange(notification: Notification) {
-			guard !paused, let beacons = notification.userInfo?["beacons"] as? [CLBeacon], let adminKey = RoomKit.config.adminKey else {
+        private func beaconsDidRange(_ beacons: [CLBeacon]) {
+			guard let adminKey = RoomKit.config.adminKey, !paused else {
 				return
 			}
 			
 			dataBackup.append((currentRoom!, beacons))
-			
 			let request = generateDataSaveRequest(adminKey: adminKey)
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
@@ -68,9 +74,14 @@ extension RoomKit {
 					self.dataBackup.append((room: self.currentRoom!, beacons: beacons))
 					return
 				}
+                guard let data = data, let json = try? JSON(data: data), let dict = json.dictionary else {
+                    return
+                }
+                guard let progress = dict[self.currentRoom!.name]?.float else {
+                    return
+                }
 				
-				self.entriesSavedForRoom[self.currentRoom!] = (self.entriesSavedForRoom[self.currentRoom!] ?? 0) + self.dataBackup.count
-				self.progressEvent.emit(self.progress)
+				self.progressEvent.emit((self.currentRoom!, progress))
 				self.dataBackup.removeAll()
 			}.resume()
 		}
@@ -100,39 +111,36 @@ extension RoomKit {
 			return request
 		}
 		
-		public func pauseTraining() {
-			paused = true
-		}
-		
-		public func resume(with room: Room?) {
-			if let room = room {
-				currentRoom = room
-			}
-			paused = false
-		}
-		
-		public func forceSaveData(timeout: TimeInterval, callback: @escaping (_ success: Bool) -> Void) {
+        /**
+         Save the data on server with the given timeout
+         
+         - parameter timeout: Ammount of time to wait
+         - returns: The future
+         */
+		public func forceSaveData(timeout: TimeInterval) -> Future<Void> {
 			guard dataBackup.count > 0 else {
-				callback(true)
-				return
+				return Future(success: Void())
 			}
 			guard let adminKey = RoomKit.config.adminKey else {
-				callback(false)
-				return
+				return Future(fail: RoomKit.error.AdminKeyRequired)
 			}
+            let promise = Promise<Void>()
 			var request = generateDataSaveRequest(adminKey: adminKey)
 			request.timeoutInterval = timeout
 			
 			URLSession.shared.dataTask(with: request) { (data, response, error) in
 				guard let httpResponse = response as? HTTPURLResponse else {
-					callback(false)
+					promise.completeWithFail(RoomKit.error.UnknownError)
 					return
 				}
 				if httpResponse.statusCode == 200 {
 					self.dataBackup.removeAll()
-				}
-				callback(httpResponse.statusCode == 200)
-			}
+                    promise.completeWithSuccess(Void())
+                } else {
+                    promise.completeWithFail(error ?? RoomKit.error.ActionFailed)
+                }
+			}.resume()
+            return promise.future
 		}
 		
 		public func completeTraining() -> Future<Void> {
@@ -143,25 +151,23 @@ extension RoomKit {
             let promise = Promise<Void>()
             promise.main = true
 			
-			var request = URLRequest(url: URL(string: "\(RoomKit.config.server)/maps/\(trainingMap!.id!)/train")!)
+            let urlString = "\(RoomKit.config.server)/maps/\(trainingMap!.id!)/train"
+			var request = URLRequest(url: URL(string: urlString)!)
 			request.httpMethod = "POST"
 			request.addValue(adminKey, forHTTPHeaderField: "authorization")
 			request.addValue("ios", forHTTPHeaderField: "os")
 			
-			self.forceSaveData(timeout: 20) { (success) in
-				guard success else {
-                    promise.failIfNotCompleted(RoomKit.error.FailedToConnect)
-					return
-				}
-				
-				URLSession.shared.dataTask(with: request) { (data, response, error) in
-					if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+            forceSaveData(timeout: 20).onSuccess { (_) in
+                URLSession.shared.dataTask(with: request) { (data, response, error) in
+                    if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                         promise.completeWithSuccess(Void())
                     } else {
                         promise.completeWithFail(error ?? RoomKit.error.UnknownError)
                     }
-				}.resume()
-			}
+                }.resume()
+            }.onFail { (error) in
+                promise.completeWithFail(error)
+            }
             
             return promise.future
 		}
@@ -173,7 +179,7 @@ extension RoomKit {
 			trainingMap = nil
 			currentRoom = nil
 			dataBackup.removeAll()
-			NotificationCenter.default.removeObserver(self)
+            beaconsDidRangeListner?.isListening = false
 		}
 	}
 }

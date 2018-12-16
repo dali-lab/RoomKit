@@ -20,7 +20,7 @@ public class RoomKit {
 		}
 		return unProtConfig!
 	}
-	internal static var delegates: [RoomKitDelegate?] = []
+    public static let mapRegionStateChange = Event<(map: Map, state: CLRegionState)>()
 	
 	public static func configure(config: RoomKit.Config, callback: ((RoomKit.error?) -> Void)?) {
 		RoomKit.unProtConfig = config
@@ -38,17 +38,6 @@ public class RoomKit {
 					startMonitoring()
 				}
 			}
-		}
-	}
-	
-	public static func registerDelegate(delegate: RoomKitDelegate) -> RoomKitDelegateID {
-		delegates.append(delegate)
-		return delegates.count - 1
-	}
-	
-	public static func unregisterDelegate(i: RoomKitDelegateID) {
-		if i < delegates.count {
-			delegates[i] = nil
 		}
 	}
 	
